@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kaboom!</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --felt-1:#0b3d2e;
+  --felt-2:#0f4d38;
+  --felt-edge:#082a20;
+  --gold:#cda434;
+  --gold-bright:#e6c05c;
+  --cream:#f3ecd9;
+  --ink:#161311;
+  --red:#a8342a;
+  --danger:#e6533c;
+  --card-back:#12324a;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--felt-2), var(--felt-1) 60%, var(--felt-edge) 100%);
+  font-family:'Manrope',sans-serif;
+  color:var(--cream);
+  overflow-x:hidden;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+.display{font-family:'Fraunces',serif;}
+
+/* ---------- layout shells ---------- */
+#app{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:24px 16px 120px;
+}
+.screen{
+  width:100%;
+  max-width:920px;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+}
+.screen.active{display:flex;}
+
+/* ---------- header / title ---------- */
+.title-wrap{
+  text-align:center;
+  margin-bottom:4px;
+}
+.title-wrap h1{
+  font-family:'Fraunces',serif;
+  font-weight:900;
+  font-size:clamp(48px,10vw,84px);
+  margin:0;
+  letter-spacing:-1px;
+  color:var(--gold-bright);
+  text-shadow:0 0 40px rgba(230,192,92,0.35), 0 4px 0 rgba(0,0,0,0.3);
+  line-height:0.95;
+}
+.title-wrap h1 .bang{
+  display:inline-block;
+  color:var(--danger);
+  transform:rotate(-6deg);
+}
+.title-wrap p{
+  margin:8px 0 0;
+  color:rgba(243,236,217,0.65);
+  font-size:14px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+
+/* ---------- setup screen ---------- */
+.setup-card{
+  background:rgba(8,42,32,0.55);
+  border:1px solid rgba(205,164,52,0.3);
+  border-radius:18px;
+  padding:28px;
+  width:100%;
+  max-width:520px;
+  backdrop-filter:blur(6px);
+}
+.setup-block{margin-bottom:24px;}
+.setup-block:last-child{margin-bottom:0;}
+.setup-label{
+  font-size:12px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:10px;
+  font-weight:700;
+}
+.option-row{display:flex;gap:10px;flex-wrap:wrap;}
+.option-btn{
+  flex:1;
+  min-width:64px;
+  padding:12px 10px;
+  border-radius:10px;
+  border:1.5px solid rgba(205,164,52,0.35);
+  background:rgba(0,0,0,0.15);
+  color:var(--cream);
+  font-family:'Manrope',sans-serif;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+  transition:all .15s ease;
+  text-align:center;
+}
+.option-btn:hover{border-color:var(--gold);background:rgba(205,164,52,0.12);}
+.option-btn.selected{
+  background:var(--gold);
+  color:var(--ink);
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(205,164,52,0.25);
+}
+.option-btn small{display:block;font-weight:500;font-size:11px;opacity:.75;margin-top:2px;}
+
+.btn-primary{
+  width:100%;
+  margin-top:8px;
+  padding:16px;
+  border-radius:12px;
+  border:none;
+  background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color:var(--ink);
+  font-weight:800;
+  font-size:16px;
+  letter-spacing:.5px;
+  cursor:pointer;
+  box-shadow:0 6px 0 #8a6f22, 0 10px 20px rgba(0,0,0,0.35);
+  transition:transform .1s ease;
+}
+.btn-primary:active{transform:translateY(4px);box-shadow:0 2px 0 #8a6f22;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+.btn-secondary{
+  padding:12px 18px;
+  border-radius:10px;
+  border:1.5px solid rgba(243,236,217,0.4);
+  background:transparent;
+  color:var(--cream);
+  font-weight:700;
+  cursor:pointer;
+}
+.btn-secondary:hover{border-color:var(--cream);background:rgba(255,255,255,0.06);}
+.btn-danger{
+  border-color:rgba(230,83,60,0.6);
+  color:#ffb3a4;
+}
+.btn-danger:hover{border-color:var(--danger);background:rgba(230,83,60,0.12);}
+
+/* ---------- table ---------- */
+.table-wrap{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.opponent{
+  background:rgba(0,0,0,0.35);
+  border:1.5px solid rgba(205,164,52,0.3);
+  border-radius:14px;
+  padding:8px 12px;
+  min-width:110px;
+  text-align:center;
+  transition:all .2s ease;
+  position:absolute;
+  transform:translate(-50%,-50%);
+  backdrop-filter:blur(3px);
+}
+.opponent.active-turn{
+  border-color:var(--gold-bright);
+  box-shadow:0 0 0 3px rgba(230,192,92,0.25), 0 0 26px rgba(230,192,92,0.3);
+}
+.opponent.kaboom-out{opacity:.45;}
+.opponent-name{font-weight:800;font-size:12px;margin-bottom:2px;}
+.opponent-tag{font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.opponent-cards{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;}
+
+.mini-card{
+  width:24px;height:33px;
+  border-radius:4px;
+  background:linear-gradient(160deg,var(--card-back),#0a2036);
+  border:1px solid rgba(205,164,52,0.5);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.mini-card.race-target{
+  cursor:pointer;
+  border-color:var(--gold-bright);
+  box-shadow:0 0 0 2px rgba(230,192,92,0.4);
+}
+.mini-card.race-target:hover{
+  transform:translateY(-3px);
+  box-shadow:0 0 0 2px var(--gold-bright), 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.table-oval{
+  position:relative;
+  width:100%;
+  max-width:640px;
+  aspect-ratio:16/10;
+  margin:0 auto;
+  border-radius:50%;
+  background:
+    radial-gradient(ellipse at 50% 42%, var(--felt-2) 0%, var(--felt-1) 65%, var(--felt-edge) 100%);
+  border:7px solid #0a2419;
+  box-shadow:
+    inset 0 0 0 2px rgba(205,164,52,0.35),
+    inset 0 10px 60px rgba(0,0,0,0.55),
+    0 14px 34px rgba(0,0,0,0.45);
+}
+.human-seat-marker{
+  position:absolute;
+  bottom:4%;
+  left:50%;
+  transform:translate(-50%,0);
+  text-align:center;
+}
+.human-seat-marker .opponent-name{color:var(--gold-bright);}
+.table-center{
+  position:absolute;
+  top:52%;left:50%;
+  transform:translate(-50%,-50%);
+  display:flex;
+  align-items:center;
+  gap:22px;
+}
+
+.center-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:28px;
+  margin:8px 0;
+}
+.pile{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.pile-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(243,236,217,0.55);}
+.pile-count{font-size:11px;color:rgba(243,236,217,0.4);}
+
+.card{
+  width:64px;height:92px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  font-size:20px;
+  position:relative;
+  user-select:none;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
+  box-shadow:0 4px 10px rgba(0,0,0,0.35);
+}
+.card.back{
+  background:
+    repeating-linear-gradient(45deg, #123a56, #123a56 6px, #0e2f47 6px, #0e2f47 12px);
+  border:2px solid var(--gold);
+}
+.card.back::after{
+  content:'K';
+  font-family:'Fraunces',serif;
+  font-size:22px;
+  color:rgba(230,192,92,0.6);
+}
+.card.face{
+  background:var(--cream);
+  color:var(--ink);
+  border:2px solid rgba(0,0,0,0.15);
+  flex-direction:column;
+  gap:0;
+}
+.card.face.red{color:var(--red);}
+.card.face .rank{font-family:'Fraunces',serif;font-size:22px;line-height:1;}
+.card.face .suit{font-size:16px;line-height:1;margin-top:2px;}
+.card.face .val{
+  position:absolute;bottom:3px;right:5px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:700;
+  color:rgba(0,0,0,0.4);
+}
+.card.selectable:hover{transform:translateY(-6px);box-shadow:0 10px 18px rgba(0,0,0,0.45);}
+.card.chosen{outline:3px solid var(--gold-bright);outline-offset:2px;transform:translateY(-6px);}
+.card.disabled{opacity:.45;cursor:not-allowed;}
+.card.drawn-highlight{
+  box-shadow:0 0 0 3px var(--gold-bright), 0 10px 24px rgba(0,0,0,0.5);
+}
+
+.hand-zone{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  padding:16px;
+  background:rgba(0,0,0,0.18);
+  border-radius:16px;
+  border:1.5px solid rgba(205,164,52,0.25);
+}
+.hand-zone-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.hand-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+.action-panel{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  min-height:56px;
+}
+.action-msg{
+  font-size:14px;
+  text-align:center;
+  color:rgba(243,236,217,0.85);
+  max-width:520px;
+  line-height:1.4;
+}
+.action-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+.log-box{
+  width:100%;
+  max-height:110px;
+  overflow-y:auto;
+  background:rgba(0,0,0,0.25);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:12px;
+  color:rgba(243,236,217,0.6);
+  font-family:'JetBrains Mono',monospace;
+  line-height:1.6;
+}
+.log-box div:last-child{color:var(--gold-bright);}
+
+/* ---------- race banner ---------- */
+.race-banner{
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:50;
+  background:linear-gradient(180deg, rgba(168,52,42,0.97), rgba(168,52,42,0.9));
+  padding:14px 16px;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.4);
+}
+.race-banner.show{display:flex;}
+.race-banner strong{font-family:'Fraunces',serif;font-size:18px;}
+.race-bar-track{width:min(400px,90%);height:6px;background:rgba(0,0,0,0.3);border-radius:4px;overflow:hidden;}
+.race-bar-fill{height:100%;background:var(--gold-bright);width:100%;transform-origin:left;}
+
+/* ---------- modal ---------- */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.65);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:100;
+  padding:20px;
+}
+.modal-overlay.show{display:flex;}
+.modal-box{
+  background:var(--felt-2);
+  border:1.5px solid var(--gold);
+  border-radius:16px;
+  padding:26px;
+  max-width:480px;
+  width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-box h3{
+  font-family:'Fraunces',serif;
+  font-size:24px;
+  margin:0 0 8px;
+  color:var(--gold-bright);
+}
+.modal-box p{font-size:14px;color:rgba(243,236,217,0.8);margin:0 0 18px;line-height:1.5;}
+.modal-hand{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;}
+.modal-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.peek-reveal{
+  display:flex;justify-content:center;margin-bottom:16px;
+}
+
+/* ---------- kaboom burst ---------- */
+.burst-overlay{
+  position:fixed;inset:0;
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:200;
+  background:rgba(0,0,0,0.5);
+  pointer-events:none;
+}
+.burst-overlay.show{display:flex;}
+.burst-text{
+  font-family:'Fraunces',serif;
+  font-weight:900;
+  font-size:clamp(56px,14vw,120px);
+  color:var(--gold-bright);
+  text-shadow:0 0 60px rgba(230,192,92,0.8), 0 0 120px rgba(168,52,42,0.6);
+  transform:scale(0.3) rotate(-8deg);
+  animation:burstIn .6s cubic-bezier(.2,1.4,.4,1) forwards;
+}
+@keyframes burstIn{
+  0%{transform:scale(0.2) rotate(-15deg);opacity:0;}
+  60%{transform:scale(1.15) rotate(3deg);opacity:1;}
+  100%{transform:scale(1) rotate(-4deg);opacity:1;}
+}
+
+/* ---------- scoreboard ---------- */
+.score-table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+.score-table th,.score-table td{
+  padding:10px 12px;
+  text-align:left;
+  border-bottom:1px solid rgba(205,164,52,0.2);
+  font-size:14px;
+}
+.score-table th{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:1px;}
+.score-table tr.winner{background:rgba(205,164,52,0.15);}
+.score-table tr.winner td:first-child::before{content:'👑 ';}
+.score-cards{display:flex;gap:4px;flex-wrap:wrap;}
+
+@media (max-width:480px){
+  .card{width:52px;height:76px;font-size:16px;}
+  .card.face .rank{font-size:18px;}
+  .mini-card{width:20px;height:28px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ SETUP ============ -->
+  <div class="screen active" id="screen-setup">
+    <div class="title-wrap">
+      <h1>KABOOM<span class="bang">!</span></h1>
+      <p>Il mazzo esplosivo della memoria</p>
+    </div>
+    <div class="setup-card">
+      <div class="setup-block">
+        <div class="setup-label">Numero di avversari (bot)</div>
+        <div class="option-row" id="bot-count-row"></div>
+      </div>
+      <div class="setup-block">
+        <div class="setup-label">Difficoltà bot</div>
+        <div class="option-row" id="difficulty-row"></div>
+      </div>
+      <button class="btn-primary" id="btn-start-setup">Distribuisci le carte</button>
+    </div>
+  </div>
+
+  <!-- ============ PEEK ============ -->
+  <div class="screen" id="screen-peek">
+    <div class="title-wrap">
+      <h1 style="font-size:clamp(32px,7vw,48px);">Sbircia le tue carte</h1>
+      <p id="peek-instructions">Scegli 2 delle tue 4 carte da guardare</p>
+    </div>
+    <div class="hand-zone">
+      <div class="hand-row" id="peek-hand"></div>
+    </div>
+    <button class="btn-primary" id="btn-confirm-peek" disabled style="max-width:320px;">Gira le carte e inizia</button>
+  </div>
+
+  <!-- ============ TABLE / PLAY ============ -->
+  <div class="screen" id="screen-play">
+    <div class="table-oval" id="table-oval">
+      <div class="opponents-row" id="opponents-row"></div>
+      <div class="table-center">
+        <div class="pile">
+          <div class="pile-label">Mazzo</div>
+          <div class="card back" id="draw-pile"></div>
+          <div class="pile-count" id="draw-count"></div>
+        </div>
+        <div class="pile" id="drawn-pile" style="display:none;">
+          <div class="pile-label">Carta pescata</div>
+          <div id="drawn-card-slot"></div>
+          <div class="pile-count">&nbsp;</div>
+        </div>
+        <div class="pile">
+          <div class="pile-label">Scarti</div>
+          <div id="discard-pile"></div>
+          <div class="pile-count" id="discard-count"></div>
+        </div>
+      </div>
+      <div class="human-seat-marker" id="human-seat-marker"></div>
+    </div>
+
+    <div class="hand-zone">
+      <div class="hand-zone-label" id="human-hand-label">Le tue carte</div>
+      <div class="hand-row" id="human-hand"></div>
+    </div>
+
+    <div class="action-panel">
+      <div class="action-msg" id="action-msg">Tocca a te: pesca una carta.</div>
+      <div class="action-buttons" id="action-buttons"></div>
+    </div>
+
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+  <!-- ============ GAME OVER ============ -->
+  <div class="screen" id="screen-over">
+    <div class="title-wrap">
+      <h1 style="font-size:clamp(36px,8vw,60px);" id="over-title">Fine partita</h1>
+    </div>
+    <table class="score-table" id="score-table"></table>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-primary" id="btn-play-again" style="width:auto;padding:14px 28px;">Rigioca</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- race banner -->
+<div class="race-banner" id="race-banner">
+  <strong id="race-title">CORSA ALLO SCARTO!</strong>
+  <div class="action-msg" id="race-msg" style="color:rgba(255,255,255,0.9);"></div>
+  <div class="race-bar-track"><div class="race-bar-fill" id="race-bar"></div></div>
+</div>
+
+<!-- generic modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<!-- kaboom burst -->
+<div class="burst-overlay" id="burst-overlay">
+  <div class="burst-text">KABOOM!</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   DATA MODEL
+   ========================================================================= */
+const SUITS = [
+  {code:'S', symbol:'♠', color:'black', name:'Picche'},
+  {code:'C', symbol:'♣', color:'black', name:'Fiori'},
+  {code:'H', symbol:'♥', color:'red',   name:'Cuori'},
+  {code:'D', symbol:'♦', color:'red',   name:'Quadri'},
+];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+function buildDeck(){
+  const deck = [];
+  let uid = 0;
+  SUITS.forEach(s=>{
+    RANKS.forEach(r=>{
+      deck.push({ id:'c'+(uid++), rank:r, suit:s.code, joker:false });
+    });
+  });
+  deck.push({ id:'c'+(uid++), rank:'JOKER', suit:null, joker:true });
+  deck.push({ id:'c'+(uid++), rank:'JOKER', suit:null, joker:true });
+  return deck;
+}
+
+function cardValue(card){
+  if(card.joker) return -1;
+  if(card.rank === 'K'){
+    const s = SUITS.find(s=>s.code===card.suit);
+    if(s.color==='red') return 0;
+    return 10; // K nero
+  }
+  if(card.rank === 'A') return 1;
+  if(['J','Q'].includes(card.rank)) return 10;
+  return parseInt(card.rank,10);
+}
+
+function cardPower(card){
+  // Only relevant if the card is DISCARDED DIRECTLY (not via swap)
+  if(card.joker) return null;
+  if(['7','8'].includes(card.rank)) return 'viewOwn';
+  if(['9','10'].includes(card.rank)) return 'viewOpp';
+  if(['J','Q'].includes(card.rank)) return 'forceSwap';
+  if(card.rank==='K'){
+    const s = SUITS.find(s=>s.code===card.suit);
+    if(s.color==='black') return 'peekSwap';
+  }
+  return null;
+}
+
+function suitInfo(code){ return SUITS.find(s=>s.code===code); }
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+/* =========================================================================
+   GAME STATE
+   ========================================================================= */
+let G = null; // global game state, (re)initialised in newGame()
+
+function newGame(numBots, difficulty){
+  const deck = shuffle(buildDeck());
+  const players = [];
+  players.push({
+    id:0, name:'Tu', isHuman:true, difficulty:null,
+    hand:[], known:new Set(), // indices this player currently knows the identity of
+  });
+  for(let i=0;i<numBots;i++){
+    players.push({
+      id:i+1, name:'Bot '+(i+1), isHuman:false, difficulty,
+      hand:[], known:new Set(),
+      memory:{ own:new Map(), opp:new Map() } // opp: key `${playerIdx}:${slotIdx}` -> cardId
+    });
+  }
+  // deal 4 each
+  for(let round=0; round<4; round++){
+    players.forEach(p=> p.hand.push(deck.pop()) );
+  }
+  G = {
+    deck, discard:[],
+    players,
+    currentIndex:0,
+    phase:'peek', // peek -> play -> over
+    turnSub:'idle', // idle | drawn | resolvingPower | race
+    drawnCard:null,
+    drawnFromSwap:false,
+    kaboom:{ called:false, callerIndex:null, modsMade:false, roundsLeft:0, turnsLeft:0 },
+    race:null,
+    log:[],
+    gameOver:false,
+    winnerIndex:null,
+    winReason:null,
+    humanPeekChosen:[],
+  };
+  return G;
+}
+
+function logMsg(msg){
+  G.log.push(msg);
+  if(G.log.length>60) G.log.shift();
+  renderLog();
+}
+
+/* =========================================================================
+   SETUP SCREEN
+   ========================================================================= */
+let setupBots = 2;
+let setupDifficulty = 'medio';
+
+function buildSetupUI(){
+  const botRow = document.getElementById('bot-count-row');
+  botRow.innerHTML='';
+  [1,2,3,4].forEach(n=>{
+    const b = document.createElement('button');
+    b.className='option-btn'+(n===setupBots?' selected':'');
+    b.textContent = n;
+    b.onclick=()=>{ setupBots=n; buildSetupUI(); };
+    botRow.appendChild(b);
+  });
+  const diffRow = document.getElementById('difficulty-row');
+  diffRow.innerHTML='';
+  [['facile','Facile'],['medio','Medio'],['difficile','Difficile']].forEach(([val,label])=>{
+    const b = document.createElement('button');
+    b.className='option-btn'+(val===setupDifficulty?' selected':'');
+    b.innerHTML = label;
+    b.onclick=()=>{ setupDifficulty=val; buildSetupUI(); };
+    diffRow.appendChild(b);
+  });
+}
+buildSetupUI();
+
+document.getElementById('btn-start-setup').onclick=()=>{
+  newGame(setupBots, setupDifficulty);
+  showScreen('peek');
+  renderPeek();
+};
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+
+/* =========================================================================
+   PEEK PHASE (human only; bots auto-peek internally)
+   ========================================================================= */
+function renderPeek(){
+  // bots silently learn 2 random own cards
+  G.players.forEach(p=>{
+    if(p.isHuman) return;
+    const idxs = shuffle([0,1,2,3]).slice(0,2);
+    idxs.forEach(i=> p.memory.own.set(i, p.hand[i].id) );
+  });
+
+  const human = G.players[0];
+  const row = document.getElementById('peek-hand');
+  row.innerHTML='';
+  human.hand.forEach((card,i)=>{
+    const chosen = G.humanPeekChosen.includes(i);
+    const el = renderCardEl(chosen?card:null, {faceDown:!chosen, selectable:!chosen && G.humanPeekChosen.length<2});
+    el.onclick = ()=>{
+      if(G.humanPeekChosen.includes(i)) return;
+      if(G.humanPeekChosen.length>=2) return;
+      G.humanPeekChosen.push(i);
+      human.known.add(i);
+      renderPeek();
+    };
+    row.appendChild(el);
+  });
+  document.getElementById('peek-instructions').textContent =
+    G.humanPeekChosen.length<2 ? `Scegli 2 delle tue 4 carte da guardare (${G.humanPeekChosen.length}/2)` :
+    'Ricordale bene: tra un attimo si girano a faccia in giù.';
+  document.getElementById('btn-confirm-peek').disabled = G.humanPeekChosen.length<2;
+}
+
+document.getElementById('btn-confirm-peek').onclick=()=>{
+  G.phase='play';
+  showScreen('play');
+  logMsg('La partita inizia. Tocca a Te.');
+  renderTable();
+};
+
+/* =========================================================================
+   RENDERING HELPERS
+   ========================================================================= */
+function renderCardEl(card, opts={}){
+  // card === null => render a face-down back
+  const el = document.createElement('div');
+  if(!card || opts.faceDown){
+    el.className = 'card back';
+  } else {
+    const isRed = card.joker ? false : suitInfo(card.suit).color==='red';
+    el.className = 'card face'+(isRed?' red':'');
+    const rankLabel = card.joker ? 'JK' : card.rank;
+    const suitSymbol = card.joker ? '★' : suitInfo(card.suit).symbol;
+    el.innerHTML = `<div class="rank">${rankLabel}</div><div class="suit">${suitSymbol}</div><div class="val">${cardValue(card)>=0?'+':''}${cardValue(card)}</div>`;
+  }
+  if(opts.selectable) el.classList.add('selectable');
+  if(opts.disabled) el.classList.add('disabled');
+  if(opts.chosen) el.classList.add('chosen');
+  if(opts.highlight) el.classList.add('drawn-highlight');
+  return el;
+}
+
+function renderLog(){
+  const box = document.getElementById('log-box');
+  box.innerHTML = G.log.slice(-30).map(m=>`<div>${m}</div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function currentPlayer(){ return G.players[G.currentIndex]; }
+
+function renderTable(){
+  renderOpponents();
+  renderPiles();
+  renderHumanHand();
+  renderActionPanel();
+  renderLog();
+}
+
+const SEAT_PRESETS = {
+  1: [ {top:14, left:50} ],
+  2: [ {top:18, left:26}, {top:18, left:74} ],
+  3: [ {top:12, left:50}, {top:28, left:16}, {top:28, left:84} ],
+  4: [ {top:10, left:32}, {top:10, left:68}, {top:32, left:9}, {top:32, left:91} ],
+};
+
+function renderOpponents(){
+  const row = document.getElementById('opponents-row');
+  row.innerHTML='';
+  const bots = G.players.filter(p=>!p.isHuman);
+  const presets = SEAT_PRESETS[bots.length] || SEAT_PRESETS[4];
+  bots.forEach((p,bi)=>{
+    const idx = G.players.indexOf(p);
+    const pos = presets[bi] || {top:15,left:50};
+    const div = document.createElement('div');
+    div.className='opponent'+(idx===G.currentIndex?' active-turn':'')+(G.kaboom.called && idx===G.kaboom.callerIndex?' kaboom-out':'');
+    div.style.top = pos.top+'%';
+    div.style.left = pos.left+'%';
+    const tag = idx===G.kaboom.callerIndex ? '💥 KABOOM!' : (p.difficulty[0].toUpperCase()+p.difficulty.slice(1));
+    div.innerHTML = `<div class="opponent-name">${p.name}</div><div class="opponent-tag">${tag} · ${p.hand.length} carte</div>`;
+    const cardsWrap = document.createElement('div');
+    cardsWrap.className='opponent-cards';
+    p.hand.forEach((c,slot)=>{
+      const mc = document.createElement('div');
+      mc.className='mini-card';
+      if(G._raceMode && p.hand.length>0){
+        mc.classList.add('race-target');
+        mc.onclick = (e)=>{ e.stopPropagation(); attemptRace(0, idx, slot); };
+      }
+      cardsWrap.appendChild(mc);
+    });
+    div.appendChild(cardsWrap);
+    row.appendChild(div);
+  });
+
+  const humanMarker = document.getElementById('human-seat-marker');
+  const human = G.players[0];
+  humanMarker.innerHTML = `<div class="opponent-name">${human.name}${G.currentIndex===0?' 🎯':''}</div><div class="opponent-tag">${human.hand.length} carte</div>`;
+}
+
+function renderPiles(){
+  document.getElementById('draw-count').textContent = G.deck.length+' carte';
+  const discardWrap = document.getElementById('discard-pile');
+  discardWrap.innerHTML='';
+  if(G.discard.length){
+    const top = G.discard[G.discard.length-1];
+    discardWrap.appendChild(renderCardEl(top));
+  } else {
+    discardWrap.appendChild(renderCardEl(null, {faceDown:true}));
+  }
+  document.getElementById('discard-count').textContent = G.discard.length+' carte';
+
+  const drawnPile = document.getElementById('drawn-pile');
+  const drawnSlot = document.getElementById('drawn-card-slot');
+  if(G.drawnCard && G.currentIndex===0){
+    drawnPile.style.display='flex';
+    drawnSlot.innerHTML='';
+    drawnSlot.appendChild(renderCardEl(G.drawnCard, {highlight:true}));
+  } else {
+    drawnPile.style.display='none';
+    drawnSlot.innerHTML='';
+  }
+}
+
+function renderHumanHand(){
+  const human = G.players[0];
+  const row = document.getElementById('human-hand');
+  row.innerHTML='';
+  const label = document.getElementById('human-hand-label');
+  label.textContent = (G.kaboom.called && G.kaboom.callerIndex===0) ? 'Le tue carte (KABOOM dichiarato)' : 'Le tue carte';
+  human.hand.forEach((card,i)=>{
+    const known = human.known.has(i) && !(G._peekedOnceRevealNow===i);
+    const opts = { faceDown:true };
+    // during certain interactive modes we allow selecting a hand card
+    if(G._humanCardSelectHandler){
+      opts.selectable = G._humanCardSelectDisabledIdx!==i;
+      opts.disabled = G._humanCardSelectDisabledIdx===i;
+    }
+    const el = renderCardEl(null, opts);
+    if(G._humanCardSelectHandler){
+      el.onclick = ()=> G._humanCardSelectHandler(i);
+    }
+    row.appendChild(el);
+  });
+}
+
+/* =========================================================================
+   ACTION PANEL / TURN FLOW (HUMAN)
+   ========================================================================= */
+function setMsg(text){ document.getElementById('action-msg').textContent = text; }
+function setButtons(buttons){
+  const wrap = document.getElementById('action-buttons');
+  wrap.innerHTML='';
+  buttons.forEach(b=>{
+    const el = document.createElement('button');
+    el.className = b.danger? 'btn-secondary btn-danger' : 'btn-secondary';
+    el.textContent = b.label;
+    el.onclick = b.onClick;
+    wrap.appendChild(el);
+  });
+}
+
+function renderActionPanel(){
+  document.getElementById('draw-pile').onclick=null;
+  G._humanCardSelectHandler = null;
+  G._humanCardSelectDisabledIdx = null;
+
+  if(G.gameOver) return;
+
+  const isHumanTurn = G.currentIndex===0;
+  if(!isHumanTurn){
+    setMsg(`Turno di ${currentPlayer().name}...`);
+    setButtons([]);
+    renderHumanHand();
+    return;
+  }
+
+  if(G.turnSub==='idle'){
+    setMsg('Tocca a te: pesca una carta dal mazzo.');
+    setButtons([]);
+    document.getElementById('draw-pile').onclick = ()=> humanDraw();
+    document.getElementById('draw-pile').classList.add('selectable');
+  } else if(G.turnSub==='drawn'){
+    document.getElementById('draw-pile').classList.remove('selectable');
+    setMsg('Ecco la carta che hai pescato (a sinistra degli scarti). Scambiala con una delle tue carte, scartala direttamente, oppure dichiara Kaboom senza modifiche.');
+    renderPiles();
+
+    G._humanCardSelectHandler = (i)=> humanSwap(i);
+    renderHumanHand();
+
+    setButtons([
+      { label:'Scarta direttamente', onClick:()=> humanDiscardDrawn() },
+      { label:'Dichiara KABOOM (senza modifiche)', danger:true, onClick:()=> declareKaboom(0, false) },
+    ]);
+  } else if(G.turnSub==='postAction'){
+    setMsg('Puoi dichiarare Kaboom oppure terminare il turno.');
+    setButtons([
+      { label:'Dichiara KABOOM', danger:true, onClick:()=> declareKaboom(0, true) },
+      { label:'Termina turno', onClick:()=> endHumanTurn() },
+    ]);
+  } else {
+    setButtons([]);
+  }
+}
+
+function humanDraw(){
+  if(G.deck.length===0) reshuffleDiscardIntoDeck();
+  G.drawnCard = G.deck.pop();
+  G.drawnFromSwap = false;
+  G.turnSub='drawn';
+  logMsg(`Hai pescato una carta.`);
+  renderActionPanel();
+  renderPiles();
+}
+
+function humanSwap(slotIdx){
+  const human = G.players[0];
+  const oldCard = human.hand[slotIdx];
+  human.hand[slotIdx] = G.drawnCard;
+  human.known.add(slotIdx); // you just placed it, you know it
+  G.discard.push(oldCard);
+  logMsg(`Hai scambiato la carta in posizione ${slotIdx+1} e scartato ${cardLabel(oldCard)}.`);
+  G.drawnCard=null;
+  G.turnSub='postAction';
+  G.kaboom.modsMade = true;
+  renderPiles();
+  openRaceWindow(0);
+}
+
+function humanDiscardDrawn(){
+  const card = G.drawnCard;
+  G.discard.push(card);
+  logMsg(`Hai scartato direttamente ${cardLabel(card)}.`);
+  G.drawnCard=null;
+  renderPiles();
+  const power = cardPower(card);
+  if(power){
+    resolveHumanPower(power, ()=>{
+      G.turnSub='postAction';
+      openRaceWindow(0);
+    });
+  } else {
+    G.turnSub='postAction';
+    openRaceWindow(0);
+  }
+}
+
+function cardLabel(card){
+  if(card.joker) return 'Jolly';
+  const s = suitInfo(card.suit);
+  return `${card.rank}${s.symbol}`;
+}
+
+function endHumanTurn(){
+  advanceKaboomCountersIfNeeded(0);
+  nextTurn();
+}
+
+/* =========================================================================
+   POWER RESOLUTION (HUMAN)
+   ========================================================================= */
+function openModal(html){
+  document.getElementById('modal-box').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+function resolveHumanPower(power, onDone){
+  const human = G.players[0];
+  if(power==='viewOwn'){
+    openModal(`
+      <h3>Sbircia una tua carta</h3>
+      <p>Hai scartato una carta 7/8: scegli una delle tue carte da guardare.</p>
+      <div class="modal-hand" id="pw-hand"></div>
+    `);
+    const wrap = document.getElementById('pw-hand');
+    human.hand.forEach((c,i)=>{
+      const el = renderCardEl(null,{faceDown:true, selectable:true});
+      el.onclick=()=>{
+        human.known.add(i);
+        openModal(`
+          <h3>Ecco la tua carta</h3>
+          <div class="peek-reveal">${renderCardEl(c).outerHTML}</div>
+          <div class="modal-buttons"><button class="btn-primary" id="pw-ok" style="width:auto;padding:12px 24px;">Ho visto</button></div>
+        `);
+        document.getElementById('pw-ok').onclick=()=>{ closeModal(); logMsg(`Hai sbirciato una tua carta.`); onDone(); };
+      };
+      wrap.appendChild(el);
+    });
+  } else if(power==='viewOpp'){
+    const opponents = G.players.filter(p=>!p.isHuman && p.hand.length>0);
+    if(opponents.length===0){ onDone(); return; }
+    openModal(`
+      <h3>Sbircia una carta avversaria</h3>
+      <p>Hai scartato una carta 9/10: scegli un avversario, poi una carta.</p>
+      <div class="modal-buttons" id="pw-opp-list"></div>
+    `);
+    const list = document.getElementById('pw-opp-list');
+    opponents.forEach(p=>{
+      const b = document.createElement('button');
+      b.className='btn-secondary';
+      b.textContent = p.name;
+      b.onclick = ()=> showOppHandToPeek(p, onDone);
+      list.appendChild(b);
+    });
+  } else if(power==='forceSwap'){
+    openModal(`
+      <h3>Scambio forzato (senza vedere)</h3>
+      <p>Hai scartato J/Q: scegli una tua carta e una carta di un avversario da scambiare alla cieca.</p>
+      <div style="margin-bottom:10px;font-size:12px;color:var(--gold);">1. Scegli una tua carta</div>
+      <div class="modal-hand" id="pw-own-hand"></div>
+    `);
+    const ownWrap = document.getElementById('pw-own-hand');
+    human.hand.forEach((c,i)=>{
+      const el = renderCardEl(null,{faceDown:true, selectable:true});
+      el.onclick=()=> chooseForceSwapTarget(i, onDone);
+      ownWrap.appendChild(el);
+    });
+  } else if(power==='peekSwap'){
+    const opponents = G.players.filter(p=>!p.isHuman && p.hand.length>0);
+    if(opponents.length===0){ onDone(); return; }
+    openModal(`
+      <h3>K nero: sbircia e valuta lo scambio</h3>
+      <p>Scegli un avversario e una sua carta da guardare. Poi deciderai se scambiarla con una tua carta (alla cieca).</p>
+      <div class="modal-buttons" id="pw-opp-list"></div>
+    `);
+    const list = document.getElementById('pw-opp-list');
+    opponents.forEach(p=>{
+      const b = document.createElement('button');
+      b.className='btn-secondary';
+      b.textContent = p.name;
+      b.onclick = ()=> showOppHandForKingPeek(p, onDone);
+      list.appendChild(b);
+    });
+  } else {
+    onDone();
+  }
+}
+
+function showOppHandToPeek(opp, onDone){
+  openModal(`
+    <h3>Carte di ${opp.name}</h3>
+    <p>Scegli quale carta guardare.</p>
+    <div class="modal-hand" id="pw-target-hand"></div>
+  `);
+  const wrap = document.getElementById('pw-target-hand');
+  opp.hand.forEach((c,i)=>{
+    const el = renderCardEl(null,{faceDown:true, selectable:true});
+    el.onclick=()=>{
+      openModal(`
+        <h3>Carta di ${opp.name}</h3>
+        <div class="peek-reveal">${renderCardEl(c).outerHTML}</div>
+        <div class="modal-buttons"><button class="btn-primary" id="pw-ok" style="width:auto;padding:12px 24px;">Ho visto</button></div>
+      `);
+      document.getElementById('pw-ok').onclick=()=>{ closeModal(); logMsg(`Hai sbirciato una carta di ${opp.name}.`); onDone(); };
+    };
+    wrap.appendChild(el);
+  });
+}
+
+let _forceSwapOwnIdx = null;
+function chooseForceSwapTarget(ownIdx, onDone){
+  _forceSwapOwnIdx = ownIdx;
+  const opponents = G.players.filter(p=>!p.isHuman && p.hand.length>0);
+  if(opponents.length===0){ onDone(); return; }
+  openModal(`
+    <h3>2. Scegli l'avversario</h3>
+    <div class="modal-buttons" id="pw-opp-list"></div>
+  `);
+  const list = document.getElementById('pw-opp-list');
+  opponents.forEach(p=>{
+    const b = document.createElement('button');
+    b.className='btn-secondary';
+    b.textContent = p.name;
+    b.onclick = ()=> chooseForceSwapSlot(p, onDone);
+    list.appendChild(b);
+  });
+}
+function chooseForceSwapSlot(opp, onDone){
+  openModal(`
+    <h3>3. Scegli quale sua carta</h3>
+    <div class="modal-hand" id="pw-target-hand"></div>
+  `);
+  const wrap = document.getElementById('pw-target-hand');
+  opp.hand.forEach((c,i)=>{
+    const el = renderCardEl(null,{faceDown:true, selectable:true});
+    el.onclick=()=>{
+      const human = G.players[0];
+      const tmp = human.hand[_forceSwapOwnIdx];
+      human.hand[_forceSwapOwnIdx] = opp.hand[i];
+      opp.hand[i] = tmp;
+      human.known.delete(_forceSwapOwnIdx);
+      opp.known && opp.known.delete && opp.known.delete(i);
+      if(opp.memory) opp.memory.own.delete(i);
+      closeModal();
+      logMsg(`Scambio forzato alla cieca con ${opp.name}.`);
+      onDone();
+    };
+    wrap.appendChild(el);
+  });
+}
+
+function showOppHandForKingPeek(opp, onDone){
+  openModal(`
+    <h3>Scegli la carta di ${opp.name} da guardare</h3>
+    <div class="modal-hand" id="pw-target-hand"></div>
+  `);
+  const wrap = document.getElementById('pw-target-hand');
+  opp.hand.forEach((c,i)=>{
+    const el = renderCardEl(null,{faceDown:true, selectable:true});
+    el.onclick=()=>{
+      openModal(`
+        <h3>Carta di ${opp.name}</h3>
+        <div class="peek-reveal">${renderCardEl(c).outerHTML}</div>
+        <p>Vuoi scambiarla (alla cieca, tu vedi solo il risultato) con una tua carta?</p>
+        <div class="modal-buttons">
+          <button class="btn-secondary" id="pw-noswap">No, lascia stare</button>
+          <button class="btn-primary" id="pw-yesswap" style="width:auto;padding:12px 20px;">Sì, scambia</button>
+        </div>
+      `);
+      document.getElementById('pw-noswap').onclick=()=>{ closeModal(); logMsg(`Hai guardato una carta di ${opp.name} e non l'hai scambiata.`); onDone(); };
+      document.getElementById('pw-yesswap').onclick=()=>{
+        openModal(`
+          <h3>Scegli una tua carta da offrire</h3>
+          <div class="modal-hand" id="pw-own-hand2"></div>
+        `);
+        const human = G.players[0];
+        const ownWrap = document.getElementById('pw-own-hand2');
+        human.hand.forEach((oc,oi)=>{
+          const oel = renderCardEl(null,{faceDown:true, selectable:true});
+          oel.onclick=()=>{
+            const tmp = human.hand[oi];
+            human.hand[oi] = opp.hand[i];
+            opp.hand[i] = tmp;
+            human.known.add(oi); // player saw the opp card before swap, so now knows own slot
+            if(opp.memory) opp.memory.own.delete(i);
+            closeModal();
+            logMsg(`Hai scambiato con una carta di ${opp.name} dopo averla vista.`);
+            onDone();
+          };
+          ownWrap.appendChild(oel);
+        });
+      };
+    };
+    wrap.appendChild(el);
+  });
+}
+
+/* =========================================================================
+   RACE WINDOW (reaction discard) - rule 5
+   ========================================================================= */
+const RACE_DURATION_MS = 4200;
+
+function openRaceWindow(discarderIdx){
+  const topCard = G.discard[G.discard.length-1];
+  G.race = {
+    rank: topCard.rank,
+    joker: topCard.joker,
+    firstSuccessIdx: null,
+    attempted: new Set(),
+    active:true,
+  };
+  // Jokers never match anything (unique rank pairing only for the two identical jokers, treat as matchable to each other)
+  const banner = document.getElementById('race-banner');
+  banner.classList.add('show');
+  document.getElementById('race-title').textContent = 'CORSA ALLO SCARTO!';
+  document.getElementById('race-msg').textContent = `Scarto in gioco: ${cardLabel(topCard)}. Chi ha una carta dello stesso rango può scartarla ora!`;
+  const bar = document.getElementById('race-bar');
+  bar.style.transition='none';
+  bar.style.width='100%';
+  requestAnimationFrame(()=>{
+    bar.style.transition=`width ${RACE_DURATION_MS}ms linear`;
+    bar.style.width='0%';
+  });
+
+  // enable human race clicking via hand + opponents
+  G._raceMode = true;
+  renderRaceHumanHand();
+  renderOpponents();
+
+  // schedule bots
+  G.players.forEach((p,idx)=>{
+    if(p.isHuman) return;
+    if(p.hand.length===0) return;
+    const decision = botRaceDecision(p, idx, G.race.rank);
+    if(decision.attempt){
+      const t = setTimeout(()=>{
+        attemptRace(idx, decision.targetIdx, decision.slotIdx);
+      }, decision.delayMs);
+    }
+  });
+
+  G._raceTimeout = setTimeout(()=> closeRaceWindow(), RACE_DURATION_MS);
+}
+
+function renderRaceHumanHand(){
+  const human = G.players[0];
+  const row = document.getElementById('human-hand');
+  row.innerHTML='';
+  human.hand.forEach((card,i)=>{
+    const el = renderCardEl(null, {faceDown:true, selectable:G._raceMode});
+    if(G._raceMode){
+      el.onclick = ()=> attemptRace(0, 0, i);
+    }
+    row.appendChild(el);
+  });
+}
+
+function botRaceDecision(bot, idx, rank){
+  // returns {attempt:bool, targetIdx, slotIdx, delayMs}
+  const diffSpeed = { facile:[1400,3200], medio:[900,2400], difficile:[500,1600] }[bot.difficulty];
+  const accuracy = { facile:0.35, medio:0.65, difficile:0.9 }[bot.difficulty];
+
+  // own known matching card
+  const ownMatch = [...bot.memory.own.entries()].find(([slot,cid])=>{
+    const card = bot.hand[slot];
+    return card && card.id===cid && card.rank===rank;
+  });
+  // known matching card in an opponent's hand (from memory.opp, key `${playerIdx}:${slot}`)
+  let oppMatch = null;
+  for(const [key,cid] of bot.memory.opp.entries()){
+    const [pIdxStr,slotStr] = key.split(':');
+    const pIdx = parseInt(pIdxStr,10), slot = parseInt(slotStr,10);
+    const targetPlayer = G.players[pIdx];
+    if(!targetPlayer || pIdx===idx) continue;
+    const card = targetPlayer.hand[slot];
+    if(card && card.id===cid && card.rank===rank){ oppMatch = {pIdx, slot}; break; }
+  }
+
+  if(ownMatch && Math.random()<accuracy){
+    return { attempt:true, targetIdx:idx, slotIdx:ownMatch[0], delayMs: rand(diffSpeed[0],diffSpeed[1]) };
+  }
+  if(oppMatch && Math.random()<accuracy){
+    return { attempt:true, targetIdx:oppMatch.pIdx, slotIdx:oppMatch.slot, delayMs: rand(diffSpeed[0],diffSpeed[1]) };
+  }
+  // small chance of a risky blind guess on own hand, mostly for facile/medio to feel human-ish
+  const guessChance = { facile:0.04, medio:0.03, difficile:0.01 }[bot.difficulty];
+  if(Math.random()<guessChance && bot.hand.length>0){
+    return { attempt:true, targetIdx:idx, slotIdx: Math.floor(Math.random()*bot.hand.length), delayMs: rand(1500,3500) };
+  }
+  return { attempt:false };
+}
+
+function rand(a,b){ return a + Math.random()*(b-a); }
+
+function attemptRace(actorIdx, targetIdx, slotIdx){
+  if(!G.race || !G.race.active) return;
+  if(G.race.attempted.has(actorIdx)) return;
+  const actor = G.players[actorIdx];
+  const target = G.players[targetIdx];
+  if(slotIdx==null || !target || !target.hand[slotIdx]) return;
+  G.race.attempted.add(actorIdx);
+  const card = target.hand[slotIdx];
+  const isMatch = !card.joker && card.rank===G.race.rank;
+  const alreadySucceeded = G.race.firstSuccessIdx!==null;
+  const isSelf = actorIdx===targetIdx;
+
+  if(isMatch && !alreadySucceeded){
+    G.race.firstSuccessIdx = actorIdx;
+    G.race.rank = card.rank; // new top becomes the reference for further reactions in same window
+
+    if(isSelf){
+      target.hand.splice(slotIdx,1);
+      reindexKnownAfterRemoval(target, slotIdx);
+      G.discard.push(card);
+      logMsg(`⚡ ${actor.name} scarta al volo ${cardLabel(card)}! (-1 carta)`);
+      checkInstantWin(actorIdx);
+      renderPiles();
+      afterRaceAttemptUIUpdate(actorIdx);
+    } else {
+      G.discard.push(card);
+      logMsg(`⚡ ${actor.name} scarta al volo una carta di ${target.name} (${cardLabel(card)})! Ora deve dargli una carta.`);
+      renderPiles();
+      giveCardToTarget(actor, actorIdx, target, targetIdx, slotIdx, ()=>{
+        afterRaceAttemptUIUpdate(actorIdx);
+      });
+    }
+  } else {
+    // penalty: draw an extra card blind
+    if(G.deck.length===0) reshuffleDiscardIntoDeck();
+    const penaltyCard = G.deck.pop();
+    actor.hand.push(penaltyCard);
+    logMsg(isMatch
+      ? `${actor.name} ha reagito ma non è stato il primo: pesca una carta di penalità.`
+      : `${actor.name} ha sbagliato la reazione: pesca una carta di penalità.`);
+    afterRaceAttemptUIUpdate(actorIdx);
+  }
+}
+
+function afterRaceAttemptUIUpdate(actorIdx){
+  if(actorIdx===0 || G._raceMode){
+    renderRaceHumanHand();
+  }
+  renderOpponents();
+}
+
+function giveCardToTarget(actor, actorIdx, target, targetIdx, slotIdx, onDone){
+  if(actor.isHuman){
+    openModal(`
+      <h3>Dai una carta a ${target.name}</h3>
+      <p>Hai scartato correttamente una sua carta. Ora scegli una TUA carta da dargli (coperta, lui non la vede).</p>
+      <div class="modal-hand" id="give-hand"></div>
+    `);
+    const wrap = document.getElementById('give-hand');
+    actor.hand.forEach((c,i)=>{
+      const el = renderCardEl(null, {faceDown:true, selectable:true});
+      el.onclick = ()=>{
+        finalizeGive(actor, actorIdx, target, targetIdx, slotIdx, i);
+        closeModal();
+        onDone();
+      };
+      wrap.appendChild(el);
+    });
+  } else {
+    let giveSlot=-1, worstVal=-999;
+    actor.hand.forEach((c,i)=>{
+      const known = actor.memory.own.get(i)===c.id;
+      if(known && cardValue(c)>worstVal){ worstVal=cardValue(c); giveSlot=i; }
+    });
+    if(giveSlot===-1) giveSlot = Math.floor(Math.random()*actor.hand.length);
+    finalizeGive(actor, actorIdx, target, targetIdx, slotIdx, giveSlot);
+    onDone();
+  }
+}
+
+function finalizeGive(actor, actorIdx, target, targetIdx, slotIdx, giveSlot){
+  const givenCard = actor.hand[giveSlot];
+  actor.hand.splice(giveSlot,1);
+  reindexKnownAfterRemoval(actor, giveSlot);
+  target.hand[slotIdx] = givenCard;
+  if(target.isHuman) target.known.delete(slotIdx);
+  else target.memory.own.delete(slotIdx);
+  logMsg(`${actor.name} dà una carta coperta a ${target.name}.`);
+  checkInstantWin(actorIdx);
+  renderPiles();
+}
+
+function reindexKnownAfterRemoval(player, removedIdx){
+  const src = player.known || (player.memory && player.memory.own);
+  if(!src) return;
+  const isSet = src instanceof Set;
+  const entries = isSet ? [...src].map(i=>[i,true]) : [...src.entries()];
+  const rebuilt = entries
+    .filter(([i])=> i!==removedIdx)
+    .map(([i,v])=> i>removedIdx ? [i-1,v] : [i,v]);
+  if(isSet){
+    player.known = new Set(rebuilt.map(([i])=>i));
+  } else {
+    player.memory.own = new Map(rebuilt);
+  }
+}
+
+function closeRaceWindow(){
+  if(G._raceTimeout){ clearTimeout(G._raceTimeout); G._raceTimeout=null; }
+  document.getElementById('race-banner').classList.remove('show');
+  G.race = null;
+  G._raceMode = false;
+  if(G.gameOver) return;
+  if(G.currentIndex===0){
+    renderActionPanel();
+  } else {
+    // bot turn continues its own flow
+    renderTable();
+    setTimeout(botContinueAfterRace, 500);
+  }
+  renderOpponents();
+}
+
+/* =========================================================================
+   KABOOM
+   ========================================================================= */
+function declareKaboom(playerIdx, modsMade){
+  if(G.kaboom.called) return;
+  const player = G.players[playerIdx];
+  G.kaboom.called = true;
+  G.kaboom.callerIndex = playerIdx;
+  G.kaboom.modsMade = modsMade;
+  const rounds = modsMade ? 2 : 1;
+  G.kaboom.roundsLeft = rounds;
+  G.kaboom.turnsLeft = rounds * (G.players.length - 1);
+
+  if(!modsMade && playerIdx===0 && G.drawnCard){
+    // discard the unused drawn card, no power triggers
+    G.discard.push(G.drawnCard);
+    logMsg(`Scarti la carta pescata (nessun potere attivato) e dichiari KABOOM!`);
+    G.drawnCard=null;
+    renderPiles();
+  }
+
+  logMsg(`💥 ${player.name} dichiara KABOOM! (${rounds} giro/i finale/i)`);
+  showBurst();
+  setTimeout(()=>{
+    if(playerIdx===0){
+      G.turnSub='idle';
+      nextTurn();
+    } else {
+      botFinishTurn(playerIdx);
+    }
+  }, 900);
+}
+
+function showBurst(){
+  const el = document.getElementById('burst-overlay');
+  el.classList.add('show');
+  setTimeout(()=> el.classList.remove('show'), 1100);
+}
+
+function advanceKaboomCountersIfNeeded(justPlayedIdx){
+  if(G.kaboom.called && justPlayedIdx!==G.kaboom.callerIndex){
+    G.kaboom.turnsLeft -= 1;
+  }
+}
+
+/* =========================================================================
+   INSTANT WIN (0 cards)
+   ========================================================================= */
+function checkInstantWin(playerIdx){
+  const p = G.players[playerIdx];
+  if(p.hand.length===0 && !G.gameOver){
+    G.gameOver = true;
+    G.winnerIndex = playerIdx;
+    G.winReason = 'zero';
+    setTimeout(()=> endGame(), 900);
+  }
+}
+
+/* =========================================================================
+   TURN ENGINE
+   ========================================================================= */
+function reshuffleDiscardIntoDeck(){
+  if(G.discard.length<=1) return; // nothing to reshuffle
+  const top = G.discard.pop();
+  G.deck = shuffle(G.discard);
+  G.discard = [top];
+  logMsg('Il mazzo è vuoto: rimescolo gli scarti.');
+}
+
+function nextTurn(){
+  if(G.gameOver) return;
+  // check end-of-kaboom condition
+  if(G.kaboom.called && G.kaboom.turnsLeft<=0){
+    G.gameOver = true;
+    G.winReason = 'kaboom';
+    setTimeout(()=> endGame(), 400);
+    return;
+  }
+  // advance index, skipping kaboom caller
+  do{
+    G.currentIndex = (G.currentIndex+1) % G.players.length;
+  } while(G.kaboom.called && G.currentIndex===G.kaboom.callerIndex);
+
+  G.turnSub='idle';
+  renderTable();
+
+  if(!G.players[G.currentIndex].isHuman){
+    setTimeout(()=> botTakeTurn(G.currentIndex), 700);
+  }
+}
+
+/* =========================================================================
+   BOT AI
+   ========================================================================= */
+function botTakeTurn(idx){
+  if(G.gameOver) return;
+  const bot = G.players[idx];
+  if(G.deck.length===0) reshuffleDiscardIntoDeck();
+  const drawn = G.deck.pop();
+  renderPiles();
+  logMsg(`${bot.name} pesca una carta.`);
+
+  setTimeout(()=>{
+    const decision = botDecideAction(bot, idx, drawn);
+
+    if(decision.action==='kaboom_noswap'){
+      // discard unused, then declare
+      G.discard.push(drawn);
+      renderPiles();
+      declareKaboom(idx, false);
+      return;
+    }
+
+    if(decision.action==='swap'){
+      const oldCard = bot.hand[decision.slotIdx];
+      bot.hand[decision.slotIdx] = drawn;
+      bot.memory.own.set(decision.slotIdx, drawn.id);
+      G.discard.push(oldCard);
+      logMsg(`${bot.name} scambia una carta e scarta ${cardLabel(oldCard)}.`);
+      renderPiles();
+      G._pendingBotIdx = idx;
+      G._pendingBotModsMade = true;
+      openRaceWindow(idx);
+      return;
+    }
+
+    // direct discard
+    G.discard.push(drawn);
+    logMsg(`${bot.name} scarta direttamente ${cardLabel(drawn)}.`);
+    renderPiles();
+    const power = cardPower(drawn);
+    G._pendingBotIdx = idx;
+    G._pendingBotModsMade = true;
+    if(power){
+      resolveBotPower(bot, idx, power, ()=>{
+        openRaceWindow(idx);
+      });
+    } else {
+      openRaceWindow(idx);
+    }
+  }, 600);
+}
+
+function botContinueAfterRace(){
+  const idx = G._pendingBotIdx;
+  if(idx==null || G.gameOver) return;
+  const bot = G.players[idx];
+  // decide whether to declare kaboom after having modified
+  const shouldKaboom = botKaboomDecision(bot, idx, true);
+  if(shouldKaboom){
+    declareKaboom(idx, true);
+  } else {
+    botFinishTurn(idx);
+  }
+}
+
+function botFinishTurn(idx){
+  advanceKaboomCountersIfNeeded(idx);
+  nextTurn();
+}
+
+function estimateHandValue(bot){
+  // sum known cards at face value, unknown cards estimated at ~5.5 (avg deck value-ish)
+  let total=0;
+  bot.hand.forEach((c,i)=>{
+    if(bot.memory.own.get(i)===c.id) total += cardValue(c);
+    else total += 5.5;
+  });
+  return total;
+}
+
+function botDecideAction(bot, idx, drawn){
+  const diff = bot.difficulty;
+  const drawnVal = cardValue(drawn);
+
+  // find worst known own card to potentially replace
+  let worstSlot=-1, worstVal=-999;
+  bot.hand.forEach((c,i)=>{
+    if(bot.memory.own.get(i)===c.id){
+      const v = cardValue(c);
+      if(v>worstVal){ worstVal=v; worstSlot=i; }
+    }
+  });
+
+  const thresholds = { facile:0, medio:1, difficile:2 };
+  const th = thresholds[diff];
+
+  // kaboom check BEFORE acting, i.e. "no modification" kaboom
+  if(botKaboomDecision(bot, idx, false, drawn)){
+    return { action:'kaboom_noswap' };
+  }
+
+  if(worstSlot>=0 && drawnVal < worstVal - th){
+    return { action:'swap', slotIdx: worstSlot };
+  }
+  // if we have unknown slots and the drawn card is decently good, sometimes gamble a swap on an unknown slot
+  const unknownSlots = bot.hand.map((c,i)=>i).filter(i=> bot.memory.own.get(i)!==bot.hand[i].id);
+  if(unknownSlots.length>0){
+    const gambleChance = { facile:0.5, medio:0.3, difficile:0.15 }[diff];
+    if(drawnVal<=3 && Math.random()<gambleChance){
+      const slot = unknownSlots[Math.floor(Math.random()*unknownSlots.length)];
+      return { action:'swap', slotIdx: slot };
+    }
+  }
+  return { action:'discard' };
+}
+
+function botKaboomDecision(bot, idx, afterMods, drawnCardIfAny){
+  if(G.kaboom.called) return false;
+  const diff = bot.difficulty;
+  const est = estimateHandValue(bot);
+  const knownCount = [...bot.memory.own.entries()].filter(([i,cid])=> bot.hand[i] && bot.hand[i].id===cid).length;
+  const confidence = knownCount / Math.max(bot.hand.length,1);
+  const thresholds = {
+    facile:   { maxEst:6,  minConfidence:0.4, chance:0.15 },
+    medio:    { maxEst:5,  minConfidence:0.55, chance:0.35 },
+    difficile:{ maxEst:4,  minConfidence:0.7, chance:0.6 },
+  }[diff];
+  if(bot.hand.length<=2 && est<=thresholds.maxEst && confidence>=thresholds.minConfidence){
+    return Math.random()<thresholds.chance;
+  }
+  if(afterMods && est<=thresholds.maxEst-2 && confidence>=thresholds.minConfidence){
+    return Math.random()<thresholds.chance*0.6;
+  }
+  return false;
+}
+
+function resolveBotPower(bot, idx, power, onDone){
+  if(power==='viewOwn'){
+    const unknown = bot.hand.map((c,i)=>i).filter(i=> bot.memory.own.get(i)!==bot.hand[i].id);
+    if(unknown.length>0){
+      const slot = unknown[Math.floor(Math.random()*unknown.length)];
+      bot.memory.own.set(slot, bot.hand[slot].id);
+      logMsg(`${bot.name} sbircia una propria carta.`);
+    }
+    onDone();
+  } else if(power==='viewOpp'){
+    const targets = G.players.filter((p,i)=> i!==idx && p.hand.length>0);
+    if(targets.length===0){ onDone(); return; }
+    const target = targets[Math.floor(Math.random()*targets.length)];
+    const tIdx = G.players.indexOf(target);
+    const slot = Math.floor(Math.random()*target.hand.length);
+    bot.memory.opp.set(`${tIdx}:${slot}`, target.hand[slot].id);
+    logMsg(`${bot.name} sbircia una carta di ${target.name}.`);
+    onDone();
+  } else if(power==='forceSwap'){
+    const targets = G.players.filter((p,i)=> i!==idx && p.hand.length>0);
+    if(targets.length===0){ onDone(); return; }
+    const target = targets[Math.floor(Math.random()*targets.length)];
+    const tIdx = G.players.indexOf(target);
+    // choose own worst-known-or-random slot to give away
+    let ownSlot = -1, worstVal=-999;
+    bot.hand.forEach((c,i)=>{
+      if(bot.memory.own.get(i)===c.id && cardValue(c)>worstVal){ worstVal=cardValue(c); ownSlot=i; }
+    });
+    if(ownSlot===-1) ownSlot = Math.floor(Math.random()*bot.hand.length);
+    const targetSlot = Math.floor(Math.random()*target.hand.length);
+    const tmp = bot.hand[ownSlot];
+    bot.hand[ownSlot] = target.hand[targetSlot];
+    target.hand[targetSlot] = tmp;
+    bot.memory.own.delete(ownSlot);
+    if(target.memory) target.memory.own.delete(targetSlot);
+    if(target.isHuman) target.known.delete(targetSlot);
+    logMsg(`${bot.name} forza uno scambio alla cieca con ${target.name}.`);
+    onDone();
+  } else if(power==='peekSwap'){
+    const targets = G.players.filter((p,i)=> i!==idx && p.hand.length>0);
+    if(targets.length===0){ onDone(); return; }
+    const target = targets[Math.floor(Math.random()*targets.length)];
+    const tIdx = G.players.indexOf(target);
+    const slot = Math.floor(Math.random()*target.hand.length);
+    const seenCard = target.hand[slot];
+    const seenVal = cardValue(seenCard);
+    logMsg(`${bot.name} (K nero) sbircia una carta di ${target.name}.`);
+    // decide swap: if seen card is worse than bot's worst known card, swap
+    let ownSlot=-1, worstVal=-999;
+    bot.hand.forEach((c,i)=>{
+      if(bot.memory.own.get(i)===c.id && cardValue(c)>worstVal){ worstVal=cardValue(c); ownSlot=i; }
+    });
+    const willSwap = ownSlot!==-1 && seenVal < worstVal;
+    if(willSwap){
+      const tmp = bot.hand[ownSlot];
+      bot.hand[ownSlot] = target.hand[slot];
+      target.hand[slot] = tmp;
+      bot.memory.own.set(ownSlot, seenCard.id);
+      if(target.memory) target.memory.own.delete(slot);
+      if(target.isHuman) target.known.delete(slot);
+      logMsg(`${bot.name} scambia con la carta vista di ${target.name}.`);
+    }
+    onDone();
+  } else {
+    onDone();
+  }
+}
+
+/* =========================================================================
+   END GAME / SCORING
+   ========================================================================= */
+function endGame(){
+  G.phase='over';
+  showScreen('over');
+  const rows = G.players.map(p=>({ p, score: p.hand.reduce((s,c)=>s+cardValue(c),0) }));
+
+  let winnerIdx;
+  if(G.winReason==='zero'){
+    winnerIdx = G.winnerIndex;
+  } else {
+    const minScore = Math.min(...rows.map(r=>r.score));
+    const tied = rows.filter(r=>r.score===minScore).map(r=>G.players.indexOf(r.p));
+    if(tied.includes(G.kaboom.callerIndex)) winnerIdx = G.kaboom.callerIndex;
+    else winnerIdx = tied[0];
+  }
+  G.winnerIndex = winnerIdx;
+
+  const titleEl = document.getElementById('over-title');
+  const winner = G.players[winnerIdx];
+  titleEl.textContent = winner.isHuman ? '🎉 Hai vinto!' : `${winner.name} vince`;
+
+  const table = document.getElementById('score-table');
+  let html = `<tr><th>Giocatore</th><th>Carte</th><th>Punteggio</th></tr>`;
+  rows
+    .slice()
+    .sort((a,b)=> a.score-b.score)
+    .forEach(r=>{
+      const idx = G.players.indexOf(r.p);
+      const cardsHtml = `<div class="score-cards">${r.p.hand.map(c=>renderCardEl(c).outerHTML).join('')}</div>`;
+      html += `<tr class="${idx===winnerIdx?'winner':''}"><td>${r.p.name}${idx===G.kaboom.callerIndex?' 💥':''}</td><td>${cardsHtml}</td><td class="mono">${r.score}</td></tr>`;
+    });
+  table.innerHTML = html;
+}
+
+document.getElementById('btn-play-again').onclick = ()=>{
+  showScreen('setup');
+};
+
+})();
+</script>
+</body>
+</html>
